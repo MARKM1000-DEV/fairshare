@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Reset para garantir altura total no mobile */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #f0f0f0; /* Fundo cinza claro para destacar o app */
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100%;
+  isolation: isolate;
+}
