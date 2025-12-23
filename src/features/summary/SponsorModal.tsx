@@ -4,8 +4,7 @@ import { useBillStore } from '../../store/useBillStore';
 import { NumericKeypad } from '../../components/ui/NumericKeypad';
 import { MoneyDisplay } from '../../components/ui/MoneyDisplay';
 import { cn, formatCurrency } from '../../lib/utils';
-// Removi 'Crown' pois não é usado aqui. Mantive os outros.
-import { Eraser, AlertCircle, Pin } from 'lucide-react'; 
+import { Eraser, AlertCircle, Pin } from 'lucide-react';
 
 interface SponsorModalProps {
   isOpen: boolean;
@@ -43,15 +42,9 @@ export const SponsorModal = ({ isOpen, onClose, totalBill }: SponsorModalProps) 
     if (selectedPersonId) {
         const val = parseInt(amountStr, 10);
         
-        const otherSponsorsTotal = Object.entries(manualPayments)
-            .filter(([id]) => id !== selectedPersonId)
-            .reduce((sum, [_, amount]) => sum + (amount || 0), 0);
-
-        const maxAllowed = totalBill - otherSponsorsTotal;
-
-        if (val > maxAllowed) {
-            setErrorMsg(`Máximo possível: ${formatCurrency(maxAllowed)}`);
-            return;
+        if (val > totalBill * 1.5) { 
+             setErrorMsg("Valor muito alto");
+             return;
         }
 
         if (val > 0) setManualPayment(selectedPersonId, val);
@@ -74,12 +67,13 @@ export const SponsorModal = ({ isOpen, onClose, totalBill }: SponsorModalProps) 
         isOpen={isOpen} 
         onClose={() => { setSelectedPersonId(null); onClose(); }} 
         title={selectedPersonId ? `Valor fixo para ${selectedPerson?.name}` : "Ajuste Manual"}
+        className="flex flex-col max-h-[95dvh]"
     >
       {selectedPersonId ? (
-        // --- TELA DE DIGITAÇÃO DE VALOR ---
-        <div className="flex flex-col">
+        // --- TELA DE DIGITAÇÃO ---
+        <div className="flex flex-col h-full">
             <div className={cn(
-                "py-6 flex flex-col items-center justify-center transition-colors",
+                "py-4 flex flex-col items-center justify-center transition-colors shrink-0",
                 errorMsg ? "bg-red-50" : "bg-blue-50"
             )}>
                 <span className={cn(
@@ -93,8 +87,7 @@ export const SponsorModal = ({ isOpen, onClose, totalBill }: SponsorModalProps) 
                     value={parseInt(amountStr, 10)} 
                     className={errorMsg ? "text-red-600" : ""}
                 />
-
-                {/* Uso do ícone AlertCircle */}
+                
                 {errorMsg && (
                     <div className="flex items-center gap-1 text-red-500 text-xs mt-2 font-bold animate-pulse">
                         <AlertCircle size={12} />
@@ -103,32 +96,35 @@ export const SponsorModal = ({ isOpen, onClose, totalBill }: SponsorModalProps) 
                 )}
             </div>
             
-            <div className="flex justify-between px-6 pt-2">
-                 {/* Uso do ícone Eraser */}
+            <div className="flex justify-between px-6 pt-2 shrink-0">
                  <button onClick={handleRemove} className="text-red-500 text-sm font-bold flex items-center gap-1 active:opacity-50">
                     <Eraser size={14} /> Voltar ao proporcional
                  </button>
                  <div className="text-[10px] text-gray-400 font-medium text-right mt-1">
-                     Total da Conta: {formatCurrency(totalBill)}
+                     Total: {formatCurrency(totalBill)}
                  </div>
             </div>
 
-            <NumericKeypad 
-                onPress={handleKeypadPress}
-                onDelete={handleKeypadDelete}
-                onConfirm={handleSave}
-                confirmLabel="Confirmar Valor"
-                className="shadow-none"
-            />
+            <div className="flex-1 overflow-y-auto min-h-0 mt-2">
+                <NumericKeypad 
+                    onPress={handleKeypadPress}
+                    onDelete={handleKeypadDelete}
+                    onConfirm={handleSave}
+                    confirmLabel="Confirmar Valor"
+                    className="shadow-none border-t border-gray-100"
+                />
+            </div>
         </div>
       ) : (
         // --- LISTA DE PESSOAS ---
-        <div className="p-4 space-y-3 pb-8">
-            <p className="text-sm text-gray-500 mb-4">
-                Defina um valor exato para alguém. O restante será dividido entre os outros.
-            </p>
+        <div className="flex flex-col">
+            <div className="p-4 shrink-0 bg-white shadow-sm z-10">
+                <p className="text-sm text-gray-500">
+                    Quem vai pagar um valor diferente? (Ex: Quem não bebeu)
+                </p>
+            </div>
             
-            <div className="grid grid-cols-1 gap-3">
+            <div className="overflow-y-auto p-4 pt-2 space-y-3" style={{ maxHeight: '60vh' }}>
                 {people.map(person => {
                     const payment = manualPayments[person.id];
                     return (
@@ -136,7 +132,7 @@ export const SponsorModal = ({ isOpen, onClose, totalBill }: SponsorModalProps) 
                             key={person.id}
                             onClick={() => handlePersonClick(person.id)}
                             className={cn(
-                                "flex items-center justify-between p-4 rounded-xl border-2 transition-all",
+                                "w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all",
                                 payment 
                                     ? "border-blue-400 bg-blue-50" 
                                     : "border-gray-100 bg-white hover:border-gray-200"
@@ -144,21 +140,20 @@ export const SponsorModal = ({ isOpen, onClose, totalBill }: SponsorModalProps) 
                         >
                             <div className="flex items-center gap-3">
                                 <div 
-                                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm"
+                                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm shrink-0"
                                     style={{ backgroundColor: person.avatarColor || '#ccc' }}
                                 >
-                                    {/* Uso do ícone Pin */}
                                     {payment ? <Pin size={18} className="text-white" /> : person.name.charAt(0)}
                                 </div>
-                                <span className="font-bold text-gray-700">{person.name}</span>
+                                <span className="font-bold text-gray-700 text-left line-clamp-1">{person.name}</span>
                             </div>
 
                             {payment ? (
-                                <div className="text-blue-700 font-bold bg-blue-100 px-2 py-1 rounded text-sm">
-                                    Fixo: {formatCurrency(payment)}
+                                <div className="text-blue-700 font-bold bg-blue-100 px-2 py-1 rounded text-xs whitespace-nowrap">
+                                    {formatCurrency(payment)}
                                 </div>
                             ) : (
-                                <span className="text-gray-400 text-sm">Paga proporcional</span>
+                                <span className="text-gray-400 text-xs whitespace-nowrap">Auto</span>
                             )}
                         </button>
                     );
